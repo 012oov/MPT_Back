@@ -8,26 +8,12 @@ class Visualizer:
     def __init__(self, results: Dict[str, Any]):
         self.results = results
 
-    def _format_model_name(self, sheet_name: str) -> str:
-        """Excel 시트 이름을 그래프에 표시할 이름으로 변환합니다."""
-        name = sheet_name.replace('_weights', '')
-        if 'target_return' in name: return f"Target Return ({name.split('_')[-1]}%)"
-        name_map = {
-            'max_calmar': 'Max Calmar Ratio', 'risk_parity': 'Risk Parity',
-            'min_variance': 'Minimum Variance', 'daily_30_cap': 'Daily (30% Cap)',
-            'daily_max_sharpe': 'Daily (Max Sharpe)',
-        }
-        return name_map.get(name, name.replace('_', ' ').title())
-
     def plot_performance_comparison(self):
-        """여러 포트폴리오의 성과와 MDD를 비교하는 그래프를 그립니다."""
-        formatted_results = {self._format_model_name(k): v for k, v in self.results.items()}
-
         plt.style.use('seaborn-v0_8-whitegrid')
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(18, 12), sharex=True, gridspec_kw={'height_ratios': [2, 1]})
         colors = plt.colormaps['tab10'].colors
         
-        for i, (name, data) in enumerate(formatted_results.items()):
+        for i, (name, data) in enumerate(self.results.items()):
             color = colors[i % len(colors)]
             ax1.plot(data['value'].index, data['value'], label=f"{name} (CAGR: {data['CAGR']*100:.2f}%)", color=color, linewidth=2 if 'Benchmark' in name else 1.5)
             ax2.plot(data['drawdown_series'].index, data['drawdown_series'] * 100, label=f"{name} (MDD: {data['MDD']*100:.2f}%)", color=color, alpha=0.8, linewidth=2 if 'Benchmark' in name else 1.5)
@@ -48,28 +34,18 @@ class Visualizer:
         plt.tight_layout()
         plt.show()
 
-    def plot_efficient_frontier(
-        self, 
-        random_port_results: pd.DataFrame, 
-        max_sharpe_port: Dict[str, float], 
-        min_vol_port: Dict[str, float]
-    ):
+    def plot_efficient_frontier(self, random_port_results: pd.DataFrame, optimal_points: Dict[str, Dict]):
         plt.style.use('seaborn-v0_8-whitegrid')
         plt.figure(figsize=(12, 8))
         
-        plt.scatter(
-            random_port_results.volatility, 
-            random_port_results['return'], 
-            c=random_port_results.sharpe, 
-            cmap='viridis', marker='o', s=10, alpha=0.5
-        )
+        plt.scatter(random_port_results.volatility, random_port_results['return'], c=random_port_results.sharpe, 
+                    cmap='viridis', marker='o', s=10, alpha=0.3, label='Random Portfolios')
         plt.colorbar(label='Sharpe Ratio')
         
-        plt.scatter(max_sharpe_port['volatility'], max_sharpe_port['return'], 
-                    marker='*', color='r', s=250, label='Maximum Sharpe Ratio')
-        
-        plt.scatter(min_vol_port['volatility'], min_vol_port['return'], 
-                    marker='*', color='b', s=250, label='Minimum Volatility')
+        markers = {'Max Sharpe Ratio': ('*', 'r', 250), 'Minimum Volatility': ('*', 'b', 250)}
+        for name, point in optimal_points.items():
+            marker, color, size = markers.get(name, ('D', 'k', 50))
+            plt.scatter(point['volatility'], point['return'], marker=marker, color=color, s=size, label=name)
         
         plt.title('Efficient Frontier', fontsize=16)
         plt.xlabel('Annualized Volatility')
