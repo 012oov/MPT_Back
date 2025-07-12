@@ -27,27 +27,30 @@ STOCKS = [
     'BTC-USD', 'ETH-USD', 'XRP-USD'                  # 암호화폐
 ]
 END_DATE = datetime.now()
-START_DATE = END_DATE - timedelta(days=5*365) # 분석 기간을 5년으로 조정
+START_DATE = END_DATE - timedelta(days=5*365)
 
 # 2. 최적화 전략별 파라미터 설정
-TARGET_RETURN = 0.18
-WEIGHT_CAP = 0.30
-NUM_RANDOM_PORTFOLIOS = 25000 # 효율적 투자선 계산 시 생성할 포트폴리오 수
+TARGET_RETURN = 0.18  # '목표 수익률' 모델을 위한 연간 목표 수익률
+NUM_RANDOM_PORTFOLIOS = 25000 # ✨ 효율적 투자선 계산 시 생성할 포트폴리오 수 추가 ✨
 
-# 3. 리밸런싱 및 성과 분석 설정
+# 3. 범용 투자 비중 제약 설정
+WEIGHT_CONSTRAINTS = {
+    'min': 0.01,  # 개별 자산의 최소 보유 비중 (예: 1%)
+    'max': 0.30   # 개별 자산의 최대 보유 비중 (예: 30%)
+}
+
+# 4. 리밸런싱 및 성과 분석 설정
 INITIAL_INVESTMENT_USD = 100_000_000
 REBALANCING_FREQUENCY = 'M'
 REBALANCING_THRESHOLD = 0.05
 SLIPPAGE_PCT = 0.001
 RISK_FREE_RATE_ANNUAL = 0.00
 
-# 4. 실행할 최적화 전략 목록
-# (노트북을 수정할 필요 없이 여기에서 실행 여부를 제어합니다)
+# 5. 실행할 최적화 전략 목록
 STRATEGIES = {
     'max_calmar':       {'objective': 'neg_calmar_ratio', 'enabled': True},
+    'max_sharpe':       {'objective': 'neg_sharpe_ratio', 'enabled': True},
     'risk_parity':      {'is_optimizer': False, 'enabled': True},
     'min_variance':     {'objective': 'volatility', 'enabled': True},
-    'daily_30_cap':     {'objective': 'neg_sharpe_ratio', 'bounds_cap': WEIGHT_CAP, 'enabled': True},
     'target_return':    {'objective': 'volatility', 'target_return': TARGET_RETURN, 'enabled': True},
-    # 'max_sharpe':       {'objective': 'neg_sharpe_ratio', 'enabled': False}, # 필요 시 주석 해제하여 사용
 }
