@@ -21,10 +21,32 @@ PERFORMANCE_REPORT_SAVE_PATH = RESULTS_DIR / "performance_report.csv"
 
 # 1. 종목 및 기간 설정
 STOCKS = [
-    'SPY', 'QQQ', 'EFA', 'EEM', 'SSO', 'TQQQ', # 주식
-    'TLT', 'IEF', 'SHY',       # 채권
-    'GLD', 'DBC',              # 원자재
-    'BTC-USD', 'ETH-USD', 'XRP-USD'                  # 암호화폐
+    'SPY',  # SPDR S&P 500 ETF Trust
+    'QQQ',  # Invesco QQQ Trust
+    'IWM',  # iShares Russell 2000 ETF
+    'VTI',  # Vanguard Total Stock Market ETF
+    'AGG',  # iShares Core U.S. Aggregate Bond ETF
+
+    # 섹터 대표 ETF
+    'XLK',  # Technology Select Sector SPDR Fund
+    'XLV',  # Health Care Select Sector SPDR Fund
+    'XLF',  # Financial Select Sector SPDR Fund
+    'XLE',  # Energy Select Sector SPDR Fund
+    'XLP',  # Consumer Staples Select Sector SPDR Fund
+
+    # 기타 전략 ETF
+    'VIG',  # Vanguard Dividend Appreciation ETF
+    'GLD',  # SPDR Gold Shares
+
+    # 주요 암호화폐 (Yahoo Finance 티커 형식)
+    'BTC-USD', # Bitcoin
+    'ETH-USD', # Ethereum
+    'SOL-USD', # Solana
+    'XRP-USD', # Ripple
+    'ADA-USD', # Cardano
+    'AVAX-USD',# Avalanche
+    'LINK-USD',# Chainlink
+    'DOT-USD'  # Polkadot
 ]
 END_DATE = datetime.now()
 START_DATE = END_DATE - timedelta(days=5*365)
