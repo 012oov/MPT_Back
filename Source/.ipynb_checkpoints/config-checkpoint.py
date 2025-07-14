@@ -12,7 +12,6 @@ except NameError:
 DATA_DIR = PROJECT_ROOT / "Data"
 RESULTS_DIR = PROJECT_ROOT / "Results"
 RAW_DATA_PATH = DATA_DIR / "Raw data" / "downloaded_stock_prices.csv"
-OPTIMAL_WEIGHTS_SAVE_PATH = RESULTS_DIR / "optimized_weights_all_periods.xlsx"
 PERFORMANCE_REPORT_SAVE_PATH = RESULTS_DIR / "performance_report.csv"
 
 # ==============================================================================
@@ -21,50 +20,24 @@ PERFORMANCE_REPORT_SAVE_PATH = RESULTS_DIR / "performance_report.csv"
 
 # 1. 종목 및 기간 설정
 STOCKS = [
-    'SPY',  # SPDR S&P 500 ETF Trust
-    'QQQ',  # Invesco QQQ Trust
-    'IWM',  # iShares Russell 2000 ETF
-    'VTI',  # Vanguard Total Stock Market ETF
-    'AGG',  # iShares Core U.S. Aggregate Bond ETF
-
-    # 섹터 대표 ETF
-    'XLK',  # Technology Select Sector SPDR Fund
-    'XLV',  # Health Care Select Sector SPDR Fund
-    'XLF',  # Financial Select Sector SPDR Fund
-    'XLE',  # Energy Select Sector SPDR Fund
-    'XLP',  # Consumer Staples Select Sector SPDR Fund
-
-    # 기타 전략 ETF
-    'VIG',  # Vanguard Dividend Appreciation ETF
-    'GLD',  # SPDR Gold Shares
-
-    # 주요 암호화폐 (Yahoo Finance 티커 형식)
-    'BTC-USD', # Bitcoin
-    'ETH-USD', # Ethereum
-    'SOL-USD', # Solana
-    'XRP-USD', # Ripple
-    'ADA-USD', # Cardano
-    'AVAX-USD',# Avalanche
-    'LINK-USD',# Chainlink
-    'DOT-USD'  # Polkadot
+    'SPY', 'QQQ', 'EFA', 'EEM', 'SSO', 'TQQQ', # 주식
+    'TLT', 'IEF', 'SHY',       # 채권
+    'GLD', 'DBC',              # 원자재
+    'BTC-USD', 'ETH-USD', 'XRP-USD'                  # 암호화폐
 ]
 END_DATE = datetime.now()
-START_DATE = END_DATE - timedelta(days=5*365)
+START_DATE = END_DATE - timedelta(days=10*365)
 
-# 2. 최적화 전략별 파라미터 설정
-TARGET_RETURN = 0.18  # '목표 수익률' 모델을 위한 연간 목표 수익률
-NUM_RANDOM_PORTFOLIOS = 25000 # ✨ 효율적 투자선 계산 시 생성할 포트폴리오 수 추가 ✨
+# 2. 동적 백테스팅 설정
+ROLLING_WINDOW_YEARS = 3  # 최적화에 사용할 과거 데이터 기간 (예: Y)
+REBALANCE_FREQUENCY = 'Y' # 리밸런싱 및 가중치 재계산 주기 ('Y': 연별, 'Q': 분기별)
 
-# 3. 범용 투자 비중 제약 설정
-WEIGHT_CONSTRAINTS = {
-    'min': 0.01,  # 개별 자산의 최소 보유 비중 (예: 1%)
-    'max': 0.30   # 개별 자산의 최대 보유 비중 (예: 30%)
-}
+# 3. 최적화 전략별 파라미터 설정
+TARGET_RETURN = 0.18
+WEIGHT_CONSTRAINTS = {'min': 0.01, 'max': 0.30}
 
 # 4. 리밸런싱 및 성과 분석 설정
 INITIAL_INVESTMENT_USD = 100_000_000
-REBALANCING_FREQUENCY = 'M'
-REBALANCING_THRESHOLD = 0.05
 SLIPPAGE_PCT = 0.001
 RISK_FREE_RATE_ANNUAL = 0.00
 
