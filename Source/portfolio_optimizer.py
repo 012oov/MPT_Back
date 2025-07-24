@@ -88,3 +88,44 @@ class PortfolioOptimizer:
         vols = returns.std()
         inv_vols = 1.0 / vols
         return (inv_vols / inv_vols.sum()).values
+
+    def run_and_save_all_strategies(self, strategies: Dict, weight_constraints: Dict, save_path: 'Path'):
+        """
+        모든 활성화된 최적화 전략을 실행하고 결과를 Excel 파일로 저장합니다.
+        
+        Args:
+            strategies (Dict): config 파일의 STRATEGIES 딕셔너리.
+            weight_constraints (Dict): 최소/최대 가중치 제약.
+            save_path (Path): 결과를 저장할 Excel 파일 경로.
+        """
+        bounds = tuple((weight_constraints['min'], weight_constraints['max']) for _ in range(self.num_assets))
+        base_constraints = [{'type': 'eq', 'fun': lambda x: np.sum(x) - 1}]
+        
+        all_weights_dict = {}
+        with pd.ExcelWriter(save_path, engine='openpyxl') as writer:
+            for name, params in strategies.items():
+                if not params.get('enabled', False):
+                    continue
+
+                print(f"  - '{name}' 전략 최적화 중...")
+                
+                if params.get('is_optimizer') is False: # Risk Parity
+                    optimal_weights = self.get_risk_parity_weights(self.returns)
+                else:
+                    constraints = base_constraints.copy()
+                    target_return = params.get('target_return')
+                    if target_return is not None:
+                         constraints.append({'type': 'ineq', 'fun': lambda w: self.calculate_metrics(w)['return'] - target_return})
+                    
+                    optimal_weights = self.run_optimization(
+                        objective_name=params['objective'],
+                        constraints=constraints,
+                        bounds=bounds
+                    )
+                
+                weights_df = pd.DataFrame({'Ticker': self.tickers, 'Optimal_Weight': optimal_weights})
+                weights_df.to_excel(writer, sheet_name=name, index=False)
+                all_weights_dict[name] = weights_df
+
+        print(f"\n최적 가중치가 '{save_path}'에 저장되었습니다.")
+        return all_weights_dict

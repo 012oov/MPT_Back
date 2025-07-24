@@ -13,6 +13,11 @@ DATA_DIR = PROJECT_ROOT / "Data"
 RESULTS_DIR = PROJECT_ROOT / "Results"
 RAW_DATA_PATH = DATA_DIR / "Raw data" / "downloaded_stock_prices.csv"
 PERFORMANCE_REPORT_SAVE_PATH = RESULTS_DIR / "performance_report.csv"
+OPTIMAL_WEIGHTS_SAVE_PATH = RESULTS_DIR / "optimal_weights.xlsx"
+
+# --- 디렉터리 자동 생성 (수정 불필요) ---
+RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+RAW_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 # ==============================================================================
 # --- 사용자 설정 영역 ---
@@ -31,6 +36,7 @@ START_DATE = END_DATE - timedelta(days=10*365)
 # 2. 동적 백테스팅 설정
 ROLLING_WINDOW_YEARS = 3  # 최적화에 사용할 과거 데이터 기간 (예: Y)
 REBALANCE_FREQUENCY = 'Y' # 리밸런싱 및 가중치 재계산 주기 ('Y': 연별, 'Q': 분기별)
+NUM_RANDOM_PORTFOLIOS = 10000 # 효율적 투자선 시각화를 위한 무작위 포트폴리오 개수
 
 # 3. 최적화 전략별 파라미터 설정
 TARGET_RETURN = 0.18
