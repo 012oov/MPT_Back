@@ -14,3 +14,11 @@ def format_model_name(sheet_name: str) -> str:
         'min_variance': 'Minimum Variance',
     }
     return name_map.get(name, name.replace('_', ' ').title())
+
+
+from pathlib import Path
+
+def ensure_dir_exists(file_path: Path):
+    """파일 경로를 받아, 해당 파일이 위치할 디렉터리가 존재하지 않으면 생성합니다."""
+    directory = file_path.parent
+    directory.mkdir(parents=True, exist_ok=True)

@@ -3,6 +3,7 @@
 import pandas as pd
 import numpy as np
 from typing import Dict, Any, Callable
+from pathlib import Path
 
 class DynamicBacktester:
     """
@@ -77,3 +78,30 @@ class DynamicBacktester:
             "Sharpe Ratio": sharpe, "Calmar Ratio": calmar,
             "Final Value": value_series.iloc[-1], "drawdown_series": drawdown_series
         }
+
+    @classmethod
+    def generate_summary_report(cls, portfolio_results: Dict[str, Any], save_path: 'Path'):
+        """
+        여러 포트폴리오의 성과를 요약하고 CSV 파일로 저장합니다.
+        
+        Args:
+            portfolio_results (Dict[str, Any]): 키는 모델 이름, 값은 성과 딕셔너리.
+            save_path (Path): 보고서를 저장할 경로.
+        """
+        report_data = []
+        for name, metrics in portfolio_results.items():
+            row = {k: v for k, v in metrics.items() if k not in ['value', 'drawdown_series']}
+            row['Model'] = name
+            report_data.append(row)
+        
+        if not report_data:
+            print("보고할 데이터가 없습니다.")
+            return
+
+        report_df = pd.DataFrame(report_data).set_index('Model')
+        
+        # 디렉터리 존재 확인 및 생성
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        report_df.to_csv(save_path)
+        print(f"\n상세 성과 보고서가 저장되었습니다: {save_path}")
+        return report_df
