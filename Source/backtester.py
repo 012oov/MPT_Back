@@ -6,53 +6,61 @@ from typing import Dict, Any, Callable
 from pathlib import Path
 
 class DynamicBacktester:
-    """
-    롤링 윈도우 기반의 동적 백테스팅을 수행하는 클래스.
-    """
-    def __init__(self, prices: pd.DataFrame, strategy_func: Callable, strategy_params: Dict,
-                 initial_investment: float, window: int, frequency: str, slippage: float):
+    """동적 롤링 윈도우 백테스팅을 수행하는 클래스"""
+    
+    def __init__(self, prices, strategy_func, strategy_params, initial_investment, window, frequency, slippage):
         self.prices = prices
         self.strategy_func = strategy_func
         self.strategy_params = strategy_params
         self.initial_investment = initial_investment
-        self.window = window * 252 # 연 단위 윈도우를 일 단위로 변환
+        self.window = window
         self.frequency = frequency
         self.slippage = slippage
+        self.portfolio_value = pd.Series(index=prices.index, dtype=float)
+        self.weights_history = []
 
-    def run(self) -> pd.Series:
-        """동적 리밸런싱 시뮬레이션을 실행합니다."""
-        portfolio_log = pd.DataFrame(index=self.prices.index, columns=['total_value'])
-        portfolio_log.iloc[0] = self.initial_investment
-        
-        rebal_dates = pd.to_datetime(self.prices.resample(self.frequency).last().index)
-        current_weights = np.zeros(len(self.prices.columns))
+    def run(self):
+        """백테스팅 실행"""
+        rebal_dates = pd.to_datetime(self.prices.resample(self.frequency.replace('Y', 'YE')).last().index)
+        rebal_dates = rebal_dates[rebal_dates >= self.prices.index[0] + pd.DateOffset(years=self.window)]
+        rebal_dates = rebal_dates[rebal_dates <= self.prices.index[-1]]
+
+        last_weights = pd.Series(1 / len(self.prices.columns), index=self.prices.columns)
+        self.portfolio_value.iloc[0] = self.initial_investment
         
         for i in range(1, len(self.prices)):
-            prev_date, curr_date = self.prices.index[i-1], self.prices.index[i]
+            prev_date, current_date = self.prices.index[i-1], self.prices.index[i]
             
-            # 리밸런싱 날짜에 도달하면 가중치 재계산
-            if curr_date in rebal_dates:
-                # 롤링 윈도우에 해당하는 데이터 추출
-                window_start_idx = max(0, i - self.window)
-                rolling_prices = self.prices.iloc[window_start_idx:i]
-                
-                if not rolling_prices.empty:
-                    print(f"{curr_date.date()}: 가중치 재계산 중...")
-                    new_weights = self.strategy_func(rolling_prices, **self.strategy_params)
-                    
-                    # 거래 비용 계산
-                    turnover = np.abs(new_weights - current_weights).sum() / 2
-                    cost = portfolio_log.loc[prev_date, 'total_value'] * turnover * self.slippage
-                    portfolio_log.loc[prev_date, 'total_value'] -= cost
-                    
-                    current_weights = new_weights
+            # 이전 날짜의 포트폴리오 가치로 현재 날짜의 가치를 초기화
+            self.portfolio_value.loc[current_date] = self.portfolio_value.loc[prev_date]
 
-            # 일별 수익률 계산 및 포트폴리오 가치 업데이트
-            daily_returns = (self.prices.loc[curr_date] / self.prices.loc[prev_date] - 1)
-            portfolio_return = (daily_returns * current_weights).sum()
-            portfolio_log.loc[curr_date, 'total_value'] = portfolio_log.loc[prev_date, 'total_value'] * (1 + portfolio_return)
+            # 리밸런싱 날짜 확인
+            if current_date in rebal_dates:
+                print(f"{current_date.date()}: 가중치 재계산 중...")
+                window_prices = self.prices.loc[:current_date].tail(self.window * 252) # 근사치
+                
+                new_weights = self.strategy_func(window_prices, **self.strategy_params)
+                
+                if new_weights is not None:
+                    new_weights = pd.Series(new_weights, index=self.prices.columns)
+                    
+                    # 슬리피지 적용
+                    turnover = (new_weights - last_weights).abs().sum() / 2
+                    rebalancing_cost = self.portfolio_value.loc[current_date] * turnover * self.slippage
+                    self.portfolio_value.loc[current_date] -= rebalancing_cost
+                    
+                    last_weights = new_weights
+                    self.weights_history.append({'date': current_date, 'weights': last_weights})
+                else:
+                    print(f"{current_date.date()}: 최적화 실패, 이전 가중치 사용.")
+                    self.weights_history.append({'date': current_date, 'weights': last_weights})
             
-        return portfolio_log['total_value'].dropna().astype(float)
+            # 일일 수익률 반영
+            daily_returns = self.prices.loc[current_date] / self.prices.loc[prev_date] - 1
+            portfolio_daily_return = (daily_returns * last_weights).sum()
+            self.portfolio_value.loc[current_date] *= (1 + portfolio_daily_return)
+
+        return self.portfolio_value.dropna()
 
     @staticmethod
     def calculate_performance_metrics(value_series: pd.Series, risk_free_rate: float) -> Dict[str, Any]:

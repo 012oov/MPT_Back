@@ -50,8 +50,17 @@ RISK_FREE_RATE_ANNUAL = 0.00
 # 5. 실행할 최적화 전략 목록
 STRATEGIES = {
     'max_calmar':       {'objective': 'neg_calmar_ratio', 'enabled': True},
-    'max_sharpe':       {'objective': 'neg_sharpe_ratio', 'enabled': True},
-    'risk_parity':      {'is_optimizer': False, 'enabled': True},
-    'min_variance':     {'objective': 'volatility', 'enabled': True},
+    'max_sharpe_ratio': {
+        'enabled': True,
+        'objective': 'neg_sharpe_ratio'
+    },
+    'risk_parity': {
+        'enabled': True,
+        'is_risk_parity': True # 리스크 패리티 전략 식별자
+    },
+    'min_volatility': {
+        'enabled': True,
+        'objective': 'portfolio_variance'
+    },
     'target_return':    {'objective': 'volatility', 'target_return': TARGET_RETURN, 'enabled': True},
 }
